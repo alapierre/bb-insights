@@ -1,5 +1,8 @@
-// Package sarif parses a SARIF 2.1.0 report (as produced by
-// "trivy --format sarif") into the common internal report model.
+// Package sarif parses a SARIF 2.1.0 report into the common internal report
+// model. SARIF is produced by many tools (Trivy, golangci-lint, Semgrep,
+// CodeQL, ...); Options lets each CLI subcommand customize how the parsed
+// results are presented without duplicating the result-to-annotation
+// conversion logic.
 package sarif
 
 import (
@@ -17,11 +20,48 @@ import (
 // security reports unless overridden by the caller.
 const DefaultReportID = "bb-insights-trivy"
 
+// DefaultSarifReportID is the deterministic Bitbucket report ID used for
+// generic SARIF reports unless overridden by the caller. Publishing more
+// than one SARIF-based report on the same commit (e.g. this subcommand
+// alongside "trivy", or two different tools both run through this
+// subcommand) requires an explicit --report-id, since they'd otherwise
+// share this default and overwrite each other.
+const DefaultSarifReportID = "bb-insights-sarif"
+
+// Options customizes the model.Report produced by Parse, so the same SARIF
+// parsing logic can back multiple CLI subcommands.
+type Options struct {
+	// ReportID is the deterministic Bitbucket report ID.
+	ReportID string
+	// Title is the report title shown in Bitbucket.
+	Title string
+	// IssueNoun names what was counted, e.g. "vulnerabilities" or "issues",
+	// used to build the report Details text.
+	IssueNoun string
+	// ReportType is the Bitbucket "report_type" for the report.
+	ReportType model.ReportType
+	// AnnotationType is the Bitbucket "annotation_type" applied to every
+	// annotation built from a SARIF result.
+	AnnotationType model.AnnotationType
+}
+
+// TrivyOptions returns the Options used for "publish trivy", preserved
+// exactly for backward compatibility.
+func TrivyOptions() Options {
+	return Options{
+		ReportID:       DefaultReportID,
+		Title:          "Trivy Security Report",
+		IssueNoun:      "vulnerabilities",
+		ReportType:     model.ReportTypeSecurity,
+		AnnotationType: model.AnnotationVulnerability,
+	}
+}
+
 // Parse reads a SARIF document and converts it into a model.Report with
 // severity-bucketed metrics and one annotation per result. Results without
 // location information still count towards the metrics but are published
 // without a file/line attachment.
-func Parse(r io.Reader) (model.Report, error) {
+func Parse(r io.Reader, opts Options) (model.Report, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return model.Report{}, fmt.Errorf("sarif: reading input: %w", err)
@@ -41,7 +81,7 @@ func Parse(r io.Reader) (model.Report, error) {
 		for _, res := range run.Results {
 			severity := resultSeverity(res, rules)
 			counts[severity]++
-			annotations = append(annotations, buildAnnotation(res, severity, seen))
+			annotations = append(annotations, buildAnnotation(res, severity, opts.AnnotationType, seen))
 		}
 	}
 
@@ -52,10 +92,10 @@ func Parse(r io.Reader) (model.Report, error) {
 	}
 
 	report := model.Report{
-		ID:      DefaultReportID,
-		Title:   "Trivy Security Report",
-		Details: fmt.Sprintf("%d vulnerabilities found", total),
-		Type:    model.ReportTypeSecurity,
+		ID:      opts.ReportID,
+		Title:   opts.Title,
+		Details: fmt.Sprintf("%d %s found", total, opts.IssueNoun),
+		Type:    opts.ReportType,
 		Result:  result,
 		Metrics: []model.Metric{
 			{Title: "Critical", Type: model.MetricNumber, Value: counts[model.SeverityCritical]},
@@ -161,7 +201,7 @@ func severityFromLevel(level string) model.Severity {
 	}
 }
 
-func buildAnnotation(res *sarif.Result, severity model.Severity, seen map[string]int) model.Annotation {
+func buildAnnotation(res *sarif.Result, severity model.Severity, annotationType model.AnnotationType, seen map[string]int) model.Annotation {
 	ruleID := ""
 	if res.RuleID != nil {
 		ruleID = *res.RuleID
@@ -199,7 +239,7 @@ func buildAnnotation(res *sarif.Result, severity model.Severity, seen map[string
 
 	return model.Annotation{
 		ExternalID: model.HashID(idParts...),
-		Type:       model.AnnotationVulnerability,
+		Type:       annotationType,
 		Severity:   severity,
 		Result:     model.AnnotationResultFailed,
 		Summary:    summary,

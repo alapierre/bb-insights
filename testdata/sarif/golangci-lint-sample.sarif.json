@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "golangci-lint",
+          "informationUri": "https://golangci-lint.run/",
+          "rules": [
+            {
+              "id": "errcheck",
+              "name": "errcheck",
+              "shortDescription": {"text": "Unchecked error return value"}
+            },
+            {
+              "id": "unused",
+              "name": "unused",
+              "shortDescription": {"text": "Unused variable or import"}
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "errcheck",
+          "level": "error",
+          "message": {
+            "text": "Error return value of `f.Close` is not checked"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "internal/cli/sarif.go"},
+                "region": {"startLine": 27}
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "unused",
+          "level": "warning",
+          "message": {
+            "text": "var x is unused"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "internal/cli/root.go"},
+                "region": {"startLine": 10}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

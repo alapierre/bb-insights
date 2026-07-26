@@ -14,4 +14,6 @@ type PublishCmd struct {
 	Tests    TestsCmd    `cmd:"" help:"Publish a Go unit test report (JUnit XML from gotestsum)."`
 	Coverage CoverageCmd `cmd:"" help:"Publish a Go coverage report (coverage.out)."`
 	Trivy    TrivyCmd    `cmd:"" help:"Publish a Trivy security report (SARIF)."`
+	Sarif    SarifCmd    `cmd:"" help:"Publish a generic SARIF report (e.g. golangci-lint, Semgrep, CodeQL)."`
+	JaCoCo   JaCoCoCmd   `cmd:"" name:"jacoco" help:"Publish a JaCoCo Java coverage report (XML)."`
 }

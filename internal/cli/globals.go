@@ -37,7 +37,7 @@ type Globals struct {
 	Timeout time.Duration `env:"BB_INSIGHTS_TIMEOUT" default:"30s" help:"HTTP request timeout."`
 
 	Link     string `env:"BB_INSIGHTS_LINK" help:"URL linking back to the CI build, shown on the report."`
-	ReportID string `help:"Override the default deterministic report ID."`
+	ReportID string `env:"BB_INSIGHTS_REPORT_ID" help:"Override the default deterministic report ID."`
 
 	DryRun bool `env:"BB_INSIGHTS_DRY_RUN" help:"Print the payload that would be sent instead of calling the Bitbucket API."`
 }

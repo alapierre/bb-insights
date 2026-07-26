@@ -37,7 +37,7 @@ func TestParseTrivySample(t *testing.T) {
 	}
 	defer f.Close()
 
-	report, err := Parse(f)
+	report, err := Parse(f, TrivyOptions())
 	if err != nil {
 		t.Fatalf("Parse() error: %v", err)
 	}
@@ -104,14 +104,14 @@ func TestParseTrivySample(t *testing.T) {
 }
 
 func TestParseRejectsInvalidSarif(t *testing.T) {
-	_, err := Parse(strings.NewReader("not json at all"))
+	_, err := Parse(strings.NewReader("not json at all"), TrivyOptions())
 	if err == nil {
 		t.Fatal("Parse() expected an error for invalid input, got nil")
 	}
 }
 
 func TestParseEmptyRuns(t *testing.T) {
-	report, err := Parse(strings.NewReader(`{"version":"2.1.0","runs":[]}`))
+	report, err := Parse(strings.NewReader(`{"version":"2.1.0","runs":[]}`), TrivyOptions())
 	if err != nil {
 		t.Fatalf("Parse() error: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestParseAssignsDistinctIDsToDuplicateFindings(t *testing.T) {
 		}]
 	}`
 
-	report, err := Parse(strings.NewReader(doc))
+	report, err := Parse(strings.NewReader(doc), TrivyOptions())
 	if err != nil {
 		t.Fatalf("Parse() error: %v", err)
 	}
@@ -147,5 +147,61 @@ func TestParseAssignsDistinctIDsToDuplicateFindings(t *testing.T) {
 	if report.Annotations[0].ExternalID == report.Annotations[1].ExternalID {
 		t.Errorf("expected distinct ExternalIDs for repeated findings at the same location, got %q twice",
 			report.Annotations[0].ExternalID)
+	}
+}
+
+func TestParseGenericSarif(t *testing.T) {
+	f, err := os.Open("../../../testdata/sarif/golangci-lint-sample.sarif.json")
+	if err != nil {
+		t.Fatalf("opening fixture: %v", err)
+	}
+	defer f.Close()
+
+	opts := Options{
+		ReportID:       DefaultSarifReportID,
+		Title:          "golangci-lint",
+		IssueNoun:      "issues",
+		ReportType:     model.ReportTypeBug,
+		AnnotationType: model.AnnotationCodeSmell,
+	}
+
+	report, err := Parse(f, opts)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	if report.ID != DefaultSarifReportID {
+		t.Errorf("ID = %q, want %q", report.ID, DefaultSarifReportID)
+	}
+	if report.Title != "golangci-lint" {
+		t.Errorf("Title = %q, want %q", report.Title, "golangci-lint")
+	}
+	if report.Details != "2 issues found" {
+		t.Errorf("Details = %q, want %q", report.Details, "2 issues found")
+	}
+	if report.Type != model.ReportTypeBug {
+		t.Errorf("Type = %q, want %q", report.Type, model.ReportTypeBug)
+	}
+
+	if len(report.Annotations) != 2 {
+		t.Fatalf("len(Annotations) = %d, want 2", len(report.Annotations))
+	}
+
+	// golangci-lint doesn't set severity tags or a security-severity score
+	// on its rules (that's a Trivy/CVSS convention), so severity must fall
+	// back to the SARIF "level".
+	errcheck := annotationByRule(t, report, "errcheck")
+	if errcheck.Severity != model.SeverityHigh {
+		t.Errorf("errcheck severity = %q, want %q (fallback from level=error)", errcheck.Severity, model.SeverityHigh)
+	}
+	unused := annotationByRule(t, report, "unused")
+	if unused.Severity != model.SeverityMedium {
+		t.Errorf("unused severity = %q, want %q (fallback from level=warning)", unused.Severity, model.SeverityMedium)
+	}
+
+	for _, a := range report.Annotations {
+		if a.Type != model.AnnotationCodeSmell {
+			t.Errorf("annotation %q Type = %q, want %q", a.Summary, a.Type, model.AnnotationCodeSmell)
+		}
 	}
 }

@@ -15,10 +15,11 @@ const pipeReportTypeEnv = "BB_INSIGHTS_REPORT_TYPE"
 
 // PipeModeArgs returns the kong argv to use in place of an empty argument
 // list, based on BB_INSIGHTS_REPORT_TYPE. It only ever selects the
-// subcommand ("publish tests"/"coverage"/"trivy"): the report file path and
-// every other setting are resolved the normal way, from each flag's own env
-// tag (e.g. --junit falls back to BB_INSIGHTS_JUNIT), so no argument
-// building is needed beyond picking the subcommand.
+// subcommand ("publish tests"/"coverage"/"trivy"/"sarif"/"jacoco"): the
+// report file path and every other setting are resolved the normal way,
+// from each flag's own env tag (e.g. --junit falls back to
+// BB_INSIGHTS_JUNIT), so no argument building is needed beyond picking the
+// subcommand.
 //
 // It returns (nil, nil) when BB_INSIGHTS_REPORT_TYPE isn't set, meaning
 // normal argument parsing - and its usual "expected command" error for a
@@ -36,8 +37,12 @@ func PipeModeArgs() ([]string, error) {
 		return []string{"publish", "coverage"}, nil
 	case "trivy":
 		return []string{"publish", "trivy"}, nil
+	case "sarif":
+		return []string{"publish", "sarif"}, nil
+	case "jacoco":
+		return []string{"publish", "jacoco"}, nil
 	default:
-		return nil, fmt.Errorf("cli: %s=%q is not a valid report type, expected one of: tests, coverage, trivy",
+		return nil, fmt.Errorf("cli: %s=%q is not a valid report type, expected one of: tests, coverage, trivy, sarif, jacoco",
 			pipeReportTypeEnv, reportType)
 	}
 }

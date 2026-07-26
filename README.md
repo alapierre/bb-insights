@@ -18,11 +18,13 @@ reports.
 
 ## Supported reports
 
-| Report              | Source                                    | Produced by                          |
-|---------------------|-------------------------------------------|--------------------------------------|
-| Go unit tests       | `test-results/unit-tests.xml` (JUnit XML) | `gotestsum --junitfile ...`          |
-| Go coverage         | `coverage.out`                            | `go test -coverprofile=coverage.out` |
-| Trivy security scan | `testdata/sarif/trivy.sarif`              | `trivy image --format sarif ...`     |
+| Report                | Source                                    | Produced by                          |
+|-----------------------|--------------------------------------------|--------------------------------------|
+| Go unit tests         | `test-results/unit-tests.xml` (JUnit XML) | `gotestsum --junitfile ...`          |
+| Go coverage           | `coverage.out`                            | `go test -coverprofile=coverage.out` |
+| JaCoCo coverage       | `jacoco.xml`                              | JaCoCo Maven/Gradle plugin           |
+| Trivy security scan   | `testdata/sarif/trivy.sarif`              | `trivy image --format sarif ...`     |
+| Generic SARIF report  | any SARIF 2.1.0 file                      | e.g. `golangci-lint`, Semgrep, CodeQL |
 
 ## Installation
 
@@ -37,7 +39,7 @@ A Docker image is also published for use as a pipeline step:
 
 ```bash
 docker run --rm -v "$PWD:/data" -w /data \
-  alapierre/bb-insights:latest \
+  lapierre/bb-insights:latest \
   publish tests --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
     --junit test-results/unit-tests.xml
 ```
@@ -56,12 +58,31 @@ bb-insights publish coverage \
 bb-insights publish trivy \
   --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
   --input trivy.sarif
+
+bb-insights publish sarif \
+  --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
+  --input golangci-lint.sarif --title golangci-lint
+
+bb-insights publish jacoco \
+  --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
+  --input jacoco.xml
 ```
 
 `--workspace`, `--repo` and `--commit` also fall back to the
 `BITBUCKET_WORKSPACE`, `BITBUCKET_REPO_SLUG` and `BITBUCKET_COMMIT`
 environment variables that Bitbucket Pipelines sets automatically, so in a
 pipeline step you typically only need to pass the report path.
+
+`publish trivy` and `publish sarif` both parse the same SARIF 2.1.0 format;
+`trivy` is a preset kept for backward compatibility (fixed title "Trivy
+Security Report", `SECURITY` report type, `VULNERABILITY` annotations),
+while `sarif` is generic and lets `--title` (env `BB_INSIGHTS_TITLE`) name
+whichever tool produced the report, publishing it as a `BUG` report with
+`CODE_SMELL` annotations instead. If you publish more than one SARIF-based
+report on the same commit (e.g. `trivy` together with `sarif`, or `sarif`
+for two different tools), give each a distinct `--report-id`, since `sarif`
+invocations share one default report ID otherwise and would overwrite each
+other.
 
 ### Authentication
 
@@ -77,17 +98,18 @@ Exactly one of the following must be configured:
 
 ### Other flags
 
-| Flag          | Env                    | Description                                                       |
-|---------------|------------------------|-------------------------------------------------------------------|
-| `--base-url`  | `BB_INSIGHTS_BASE_URL` | Bitbucket API base URL (default `https://api.bitbucket.org/2.0`). |
-| `--timeout`   | `BB_INSIGHTS_TIMEOUT`  | HTTP request timeout (default `30s`).                             |
-| `--link`      | `BB_INSIGHTS_LINK`     | URL linking back to the CI build, shown on the report.            |
-| `--report-id` | -                      | Override the default deterministic report ID.                     |
-| `--dry-run`   | `BB_INSIGHTS_DRY_RUN`  | Print the JSON payload instead of calling the Bitbucket API.      |
+| Flag          | Env                     | Description                                                       |
+|---------------|-------------------------|-------------------------------------------------------------------|
+| `--base-url`  | `BB_INSIGHTS_BASE_URL`  | Bitbucket API base URL (default `https://api.bitbucket.org/2.0`). |
+| `--timeout`   | `BB_INSIGHTS_TIMEOUT`   | HTTP request timeout (default `30s`).                             |
+| `--link`      | `BB_INSIGHTS_LINK`      | URL linking back to the CI build, shown on the report.            |
+| `--report-id` | `BB_INSIGHTS_REPORT_ID` | Override the default deterministic report ID.                     |
+| `--dry-run`   | `BB_INSIGHTS_DRY_RUN`   | Print the JSON payload instead of calling the Bitbucket API.      |
 
 Each subcommand's report path flag also has an env fallback: `--junit` reads
-`BB_INSIGHTS_JUNIT`, and `--input` (on both `coverage` and `trivy`) reads
-`BB_INSIGHTS_INPUT`.
+`BB_INSIGHTS_JUNIT`, and `--input` (on `coverage`, `trivy`, `sarif` and
+`jacoco`) reads `BB_INSIGHTS_INPUT`. `sarif`'s `--title` reads
+`BB_INSIGHTS_TITLE`.
 
 Run `bb-insights publish <command> --help` for the full list.
 
@@ -168,6 +190,14 @@ pipelines:
               BB_INSIGHTS_REPORT_TYPE: trivy
               BB_INSIGHTS_INPUT: trivy.sarif
               BB_INSIGHTS_TOKEN: $BB_INSIGHTS_TOKEN
+
+          - pipe: docker://lapierre/bb-insights:latest
+            variables:
+              BB_INSIGHTS_REPORT_TYPE: sarif
+              BB_INSIGHTS_INPUT: golangci-lint.sarif
+              BB_INSIGHTS_TITLE: golangci-lint
+              BB_INSIGHTS_REPORT_ID: bb-insights-golangci-lint
+              BB_INSIGHTS_TOKEN: $BB_INSIGHTS_TOKEN
 ```
 
 `BITBUCKET_WORKSPACE`, `BITBUCKET_REPO_SLUG` and `BITBUCKET_COMMIT` don't
@@ -176,6 +206,9 @@ variables into pipe containers automatically, same as any other step.
 `BB_INSIGHTS_TOKEN` does need to be listed explicitly (as shown above):
 only variables declared under a pipe's `variables:` are passed through from
 repository/workspace variables into the container.
+
+`BB_INSIGHTS_REPORT_TYPE: jacoco` works the same way, with
+`BB_INSIGHTS_INPUT` pointing at the `jacoco.xml` report.
 
 ## Verifying a release
 
@@ -197,7 +230,7 @@ gh attestation verify bb-insights_linux_amd64 --owner alapierre
 Verify the Docker image:
 
 ```bash
-gh attestation verify oci://index.docker.io/alapierre/bb-insights:latest --owner alapierre
+gh attestation verify oci://index.docker.io/lapierre/bb-insights:latest --owner alapierre
 ```
 
 ## Design
@@ -205,7 +238,7 @@ gh attestation verify oci://index.docker.io/alapierre/bb-insights:latest --owner
 The codebase separates three concerns, as required by the project's
 architecture (see `CLAUDE.md`):
 
-- **Parsers** (`internal/parser/{junit,coverage,sarif}`) read an external
+- **Parsers** (`internal/parser/{junit,coverage,jacoco,sarif}`) read an external
   report format and convert it into the internal model. Adding a new report
   format means adding a new parser package; existing parsers are never
   touched.

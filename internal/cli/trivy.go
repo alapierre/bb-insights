@@ -21,7 +21,7 @@ func (c *TrivyCmd) Run() error {
 	}
 	defer f.Close()
 
-	report, err := sarif.Parse(f)
+	report, err := sarif.Parse(f, sarif.TrivyOptions())
 	if err != nil {
 		return err
 	}

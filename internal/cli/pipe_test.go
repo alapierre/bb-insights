@@ -16,6 +16,8 @@ func TestPipeModeArgs(t *testing.T) {
 		{name: "tests", reportType: "tests", want: []string{"publish", "tests"}},
 		{name: "coverage", reportType: "coverage", want: []string{"publish", "coverage"}},
 		{name: "trivy", reportType: "trivy", want: []string{"publish", "trivy"}},
+		{name: "sarif", reportType: "sarif", want: []string{"publish", "sarif"}},
+		{name: "jacoco", reportType: "jacoco", want: []string{"publish", "jacoco"}},
 		{name: "unknown", reportType: "bogus", wantErr: true},
 	}
 

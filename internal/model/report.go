@@ -11,6 +11,7 @@ const (
 	ReportTypeTest     ReportType = "TEST"
 	ReportTypeCoverage ReportType = "COVERAGE"
 	ReportTypeSecurity ReportType = "SECURITY"
+	ReportTypeBug      ReportType = "BUG"
 )
 
 // DefaultReporter identifies this application as the source of a report, for

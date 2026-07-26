@@ -1,0 +1,3 @@
+<testsuite name="github.com/example/pkg" tests="1" failures="0" skipped="0" time="0.010">
+  <testcase classname="github.com/example/pkg" name="TestOnlyOne" time="0.010"></testcase>
+</testsuite>

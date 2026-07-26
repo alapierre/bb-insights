@@ -1,0 +1,63 @@
+version: 2
+
+project_name: bb-insights
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: bb-insights
+    main: ./cmd/bb-insights
+    binary: bb-insights
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+archives:
+  - formats: ["binary"]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+dockers_v2:
+  - id: bb-insights
+    images:
+      - "{{ or (index .Env \"DOCKERHUB_USERNAME\") \"alapierre\" }}/bb-insights"
+    tags:
+      - "{{ .Tag }}"
+      - latest
+    dockerfile: Dockerfile
+    labels:
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+      org.opencontainers.image.source: "https://github.com/alapierre/bb-insights"
+    platforms:
+      - linux/amd64
+    # Uses buildx's native SBOM generation (docker buildx build --sbom=true),
+    # attached to the image manifest as an in-toto attestation.
+    sbom: true
+
+sboms:
+  # archives are built with formats: ["binary"], so the artifact type is
+  # "binary", not "archive".
+  - id: binary
+    artifacts: binary
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

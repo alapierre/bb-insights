@@ -1,0 +1,17 @@
+package cli
+
+import "github.com/alecthomas/kong"
+
+// CLI is the root kong command tree for bb-insights.
+type CLI struct {
+	Publish PublishCmd `cmd:"" help:"Publish a report to Bitbucket Cloud Code Insights."`
+
+	Version kong.VersionFlag `help:"Print the version and exit."`
+}
+
+// PublishCmd groups the report-specific publish subcommands.
+type PublishCmd struct {
+	Tests    TestsCmd    `cmd:"" help:"Publish a Go unit test report (JUnit XML from gotestsum)."`
+	Coverage CoverageCmd `cmd:"" help:"Publish a Go coverage report (coverage.out)."`
+	Trivy    TrivyCmd    `cmd:"" help:"Publish a Trivy security report (SARIF)."`
+}

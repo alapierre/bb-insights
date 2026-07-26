@@ -1,0 +1,12 @@
+<testsuites tests="3" failures="1" skipped="1" time="0.567">
+  <testsuite name="github.com/example/pkg" tests="3" failures="1" skipped="1" time="0.003">
+    <testcase classname="github.com/example/pkg" name="TestAdd" time="0.001"></testcase>
+    <testcase classname="github.com/example/pkg" name="TestSubtract" time="0.002">
+      <failure message="values do not match">expected 5, got 4
+--- FAIL: TestSubtract (0.00s)</failure>
+    </testcase>
+    <testcase classname="github.com/example/pkg" name="TestSkippedThing" time="0.000">
+      <skipped message="skipping in short mode"></skipped>
+    </testcase>
+  </testsuite>
+</testsuites>

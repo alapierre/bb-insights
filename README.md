@@ -82,7 +82,19 @@ whichever tool produced the report, publishing it as a `BUG` report with
 report on the same commit (e.g. `trivy` together with `sarif`, or `sarif`
 for two different tools), give each a distinct `--report-id`, since `sarif`
 invocations share one default report ID otherwise and would overwrite each
-other.
+other:
+
+```bash
+bb-insights publish sarif \
+  --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
+  --input golangci-lint.sarif --title golangci-lint \
+  --report-id bb-insights-golangci-lint
+
+bb-insights publish sarif \
+  --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
+  --input semgrep.sarif --title semgrep \
+  --report-id bb-insights-semgrep
+```
 
 Both commands mark the report as `FAILED` only if a finding at or above
 `--fail-severity` (default `high`; also accepts `critical`, `medium` or

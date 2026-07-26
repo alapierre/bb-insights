@@ -153,6 +153,13 @@ scope Bitbucket Cloud requires for the Code Insights reports API; the
 pipeline-oriented `pipeline:write` scope, which explicitly covers uploading
 code insights, also works).
 
+Instead of installing `gotestsum`, `trivy` and `bb-insights` by hand as
+above, you can use
+[golang-docker-builder](https://github.com/alapierre/golang-docker-builder)
+as the step's `image:` - it's a ready-to-use Go build image for Bitbucket
+Pipelines that already bundles `bb-insights` alongside `gotestsum`,
+`golangci-lint`, `govulncheck` and other common CI/CD tooling.
+
 ## Use as a Bitbucket Pipe
 
 The same Docker image published above can also be referenced directly as a
@@ -261,6 +268,14 @@ a hash of stable identifying fields per annotation), so re-running a pipeline
 step on the same commit updates the existing report instead of duplicating
 it.
 
+## Related projects
+
+- [golang-docker-builder](https://github.com/alapierre/golang-docker-builder) -
+  a ready-to-use Docker build image for Go projects on Bitbucket Pipelines,
+  bundling `bb-insights` together with other CI/CD tooling
+  (`gotestsum`, `golangci-lint`, `govulncheck`, `goreleaser`, ...) so you
+  don't have to install them step by step.
+
 ## Development
 
 ```bash
@@ -271,6 +286,17 @@ go test ./...
 
 No integration tests require a real Bitbucket Cloud account; HTTP
 interactions are tested against `httptest.Server`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes, and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
+
+## AI assistance
+
+This project is developed with AI assistance (code review and parts of the
+implementation) - see [AI_USAGE.md](AI_USAGE.md) for what that means and
+what stays human-driven.
 
 ## Security
 

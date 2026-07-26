@@ -1,0 +1,63 @@
+name: New report format
+description: Request support for a new input report format (a new parser)
+labels: ["enhancement", "parser"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `bb-insights` adds new report formats as independent parser
+        packages under `internal/parser/<format>` that convert the format
+        into the shared internal model - existing parsers are never
+        modified. This form collects what's needed to scope that work. See
+        [CLAUDE.md](https://github.com/alapierre/bb-insights/blob/master/CLAUDE.md)
+        for the full architecture.
+
+  - type: input
+    id: tool
+    attributes:
+      label: Tool / format name
+      description: e.g. golangci-lint, Semgrep, Checkov, Hadolint, CodeQL, Dependency-Check, CycloneDX, SPDX
+    validations:
+      required: true
+
+  - type: input
+    id: format
+    attributes:
+      label: Report file format produced by the tool
+      description: e.g. its own JSON schema, SARIF 2.1.0, JUnit XML variant, XML, ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample report
+      description: >
+        A small (redacted if needed) sample of the report file, or a link
+        to the tool's documented output schema.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: data
+    attributes:
+      label: What data should be extracted?
+      description: >
+        What should become metrics (e.g. counts by severity, coverage
+        percentages) and what should become annotations (e.g. file,
+        line, message, severity)?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: existing-format
+    attributes:
+      label: Compatibility check
+      description: If this tool already emits a format bb-insights supports, a dedicated parser may not be needed.
+      options:
+        - label: >
+            I've confirmed this isn't already coverable via the generic
+            `sarif` subcommand (i.e. the tool does not produce SARIF
+            2.1.0 output).
+          required: false

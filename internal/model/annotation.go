@@ -30,6 +30,20 @@ const (
 	SeverityLow      Severity = "LOW"
 )
 
+var severityRank = map[Severity]int{
+	SeverityLow:      1,
+	SeverityMedium:   2,
+	SeverityHigh:     3,
+	SeverityCritical: 4,
+}
+
+// AtLeast reports whether s is at least as severe as threshold, e.g.
+// SeverityCritical.AtLeast(SeverityHigh) is true. An unrecognized Severity
+// ranks below every defined severity.
+func (s Severity) AtLeast(threshold Severity) bool {
+	return severityRank[s] >= severityRank[threshold]
+}
+
 // Location points at a file and, optionally, a line within it. A nil
 // *Location on an Annotation means the finding could not be attributed to a
 // specific file (e.g. a SARIF result without location information).

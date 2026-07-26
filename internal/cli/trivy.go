@@ -3,7 +3,9 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/alapierre/bb-insights/internal/model"
 	"github.com/alapierre/bb-insights/internal/parser/sarif"
 )
 
@@ -11,7 +13,8 @@ import (
 type TrivyCmd struct {
 	Globals
 
-	Input string `required:"" type:"existingfile" name:"input" env:"BB_INSIGHTS_INPUT" help:"Path to the Trivy SARIF report."`
+	Input        string `required:"" type:"existingfile" name:"input" env:"BB_INSIGHTS_INPUT" help:"Path to the Trivy SARIF report."`
+	FailSeverity string `default:"high" enum:"critical,high,medium,low" name:"fail-severity" env:"BB_INSIGHTS_FAIL_SEVERITY" help:"Minimum vulnerability severity that marks the report as FAILED (critical, high, medium, low)."`
 }
 
 func (c *TrivyCmd) Run() error {
@@ -21,7 +24,10 @@ func (c *TrivyCmd) Run() error {
 	}
 	defer func() { _ = f.Close() }()
 
-	report, err := sarif.Parse(f, sarif.TrivyOptions())
+	opts := sarif.TrivyOptions()
+	opts.FailThreshold = model.Severity(strings.ToUpper(c.FailSeverity))
+
+	report, err := sarif.Parse(f, opts)
 	if err != nil {
 		return err
 	}

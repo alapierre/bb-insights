@@ -43,7 +43,16 @@ type Options struct {
 	// AnnotationType is the Bitbucket "annotation_type" applied to every
 	// annotation built from a SARIF result.
 	AnnotationType model.AnnotationType
+	// FailThreshold is the minimum severity that marks the report Result as
+	// FAILED. Findings below this severity are still counted in the metrics
+	// and published as annotations, they just don't fail the report on their
+	// own. Defaults to model.SeverityHigh when left zero-valued.
+	FailThreshold model.Severity
 }
+
+// DefaultFailThreshold is the severity used when Options.FailThreshold is
+// left unset: only HIGH and CRITICAL findings fail the report.
+const DefaultFailThreshold = model.SeverityHigh
 
 // TrivyOptions returns the Options used for "publish trivy", preserved
 // exactly for backward compatibility.
@@ -60,7 +69,9 @@ func TrivyOptions() Options {
 // Parse reads a SARIF document and converts it into a model.Report with
 // severity-bucketed metrics and one annotation per result. Results without
 // location information still count towards the metrics but are published
-// without a file/line attachment.
+// without a file/line attachment. The report Result is FAILED only if at
+// least one finding meets opts.FailThreshold; lower-severity findings are
+// still reported but don't affect the result.
 func Parse(r io.Reader, opts Options) (model.Report, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -85,10 +96,18 @@ func Parse(r io.Reader, opts Options) (model.Report, error) {
 		}
 	}
 
+	threshold := opts.FailThreshold
+	if threshold == "" {
+		threshold = DefaultFailThreshold
+	}
+
 	total := len(annotations)
 	result := model.ResultPassed
-	if total > 0 {
-		result = model.ResultFailed
+	for severity, count := range counts {
+		if count > 0 && severity.AtLeast(threshold) {
+			result = model.ResultFailed
+			break
+		}
 	}
 
 	report := model.Report{

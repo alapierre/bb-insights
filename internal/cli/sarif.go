@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alapierre/bb-insights/internal/model"
 	"github.com/alapierre/bb-insights/internal/parser/sarif"
@@ -21,8 +22,9 @@ import (
 type SarifCmd struct {
 	Globals
 
-	Input string `required:"" type:"existingfile" name:"input" env:"BB_INSIGHTS_INPUT" help:"Path to the SARIF report."`
-	Title string `default:"SARIF Report" env:"BB_INSIGHTS_TITLE" help:"Report title shown in Bitbucket, e.g. the name of the tool that produced the SARIF report."`
+	Input        string `required:"" type:"existingfile" name:"input" env:"BB_INSIGHTS_INPUT" help:"Path to the SARIF report."`
+	Title        string `default:"SARIF Report" env:"BB_INSIGHTS_TITLE" help:"Report title shown in Bitbucket, e.g. the name of the tool that produced the SARIF report."`
+	FailSeverity string `default:"high" enum:"critical,high,medium,low" name:"fail-severity" env:"BB_INSIGHTS_FAIL_SEVERITY" help:"Minimum finding severity that marks the report as FAILED (critical, high, medium, low)."`
 }
 
 func (c *SarifCmd) Run() error {
@@ -38,6 +40,7 @@ func (c *SarifCmd) Run() error {
 		IssueNoun:      "issues",
 		ReportType:     model.ReportTypeBug,
 		AnnotationType: model.AnnotationCodeSmell,
+		FailThreshold:  model.Severity(strings.ToUpper(c.FailSeverity)),
 	})
 	if err != nil {
 		return err

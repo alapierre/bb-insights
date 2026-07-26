@@ -103,6 +103,38 @@ func TestParseTrivySample(t *testing.T) {
 	}
 }
 
+func TestParseResultRespectsFailThreshold(t *testing.T) {
+	const doc = `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": {"driver": {"name": "Trivy", "rules": []}},
+			"results": [
+				{"ruleId": "CVE-LOW", "level": "note", "message": {"text": "Package: foo"}}
+			]
+		}]
+	}`
+
+	// Default threshold (HIGH): a LOW-only report must pass.
+	report, err := Parse(strings.NewReader(doc), TrivyOptions())
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+	if report.Result != model.ResultPassed {
+		t.Errorf("Result = %q, want %q for a LOW-only report under the default HIGH threshold", report.Result, model.ResultPassed)
+	}
+
+	// Lowering the threshold to LOW must fail the same report.
+	opts := TrivyOptions()
+	opts.FailThreshold = model.SeverityLow
+	report, err = Parse(strings.NewReader(doc), opts)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+	if report.Result != model.ResultFailed {
+		t.Errorf("Result = %q, want %q for a LOW finding with FailThreshold = LOW", report.Result, model.ResultFailed)
+	}
+}
+
 func TestParseRejectsInvalidSarif(t *testing.T) {
 	_, err := Parse(strings.NewReader("not json at all"), TrivyOptions())
 	if err == nil {

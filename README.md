@@ -84,6 +84,12 @@ for two different tools), give each a distinct `--report-id`, since `sarif`
 invocations share one default report ID otherwise and would overwrite each
 other.
 
+Both commands mark the report as `FAILED` only if a finding at or above
+`--fail-severity` (default `high`; also accepts `critical`, `medium` or
+`low`, env `BB_INSIGHTS_FAIL_SEVERITY`) is present. Lower-severity findings
+are still published as metrics and annotations, they just don't fail the
+report on their own.
+
 ### Authentication
 
 Exactly one of the following must be configured:
@@ -109,7 +115,8 @@ Exactly one of the following must be configured:
 Each subcommand's report path flag also has an env fallback: `--junit` reads
 `BB_INSIGHTS_JUNIT`, and `--input` (on `coverage`, `trivy`, `sarif` and
 `jacoco`) reads `BB_INSIGHTS_INPUT`. `sarif`'s `--title` reads
-`BB_INSIGHTS_TITLE`.
+`BB_INSIGHTS_TITLE`; both `trivy` and `sarif`'s `--fail-severity` read
+`BB_INSIGHTS_FAIL_SEVERITY`.
 
 Run `bb-insights publish <command> --help` for the full list.
 

@@ -19,7 +19,7 @@ func (c *CoverageCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("cli: opening coverage profile %q: %w", c.Input, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	report, err := coverage.Parse(f)
 	if err != nil {

@@ -19,7 +19,7 @@ func (c *JaCoCoCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("cli: opening JaCoCo report %q: %w", c.Input, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	report, err := jacoco.Parse(f)
 	if err != nil {

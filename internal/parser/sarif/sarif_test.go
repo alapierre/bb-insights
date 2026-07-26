@@ -35,7 +35,7 @@ func TestParseTrivySample(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opening fixture: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	report, err := Parse(f, TrivyOptions())
 	if err != nil {
@@ -155,7 +155,7 @@ func TestParseGenericSarif(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opening fixture: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	opts := Options{
 		ReportID:       DefaultSarifReportID,

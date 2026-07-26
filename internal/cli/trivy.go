@@ -19,7 +19,7 @@ func (c *TrivyCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("cli: opening SARIF report %q: %w", c.Input, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	report, err := sarif.Parse(f, sarif.TrivyOptions())
 	if err != nil {

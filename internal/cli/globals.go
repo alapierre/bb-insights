@@ -81,6 +81,8 @@ func printDryRun(report model.Report, link string) error {
 	if err != nil {
 		return fmt.Errorf("cli: encoding dry-run payload: %w", err)
 	}
-	fmt.Fprintf(os.Stdout, "%s\n%s\n", report.ID, encoded)
+	if _, err := fmt.Fprintf(os.Stdout, "%s\n%s\n", report.ID, encoded); err != nil {
+		return fmt.Errorf("cli: writing dry-run payload: %w", err)
+	}
 	return nil
 }

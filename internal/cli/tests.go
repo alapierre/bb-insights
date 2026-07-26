@@ -19,7 +19,7 @@ func (c *TestsCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("cli: opening JUnit report %q: %w", c.JUnit, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	report, err := junit.Parse(f)
 	if err != nil {

@@ -22,7 +22,7 @@ reports.
 |---------------------|-------------------------------------------|--------------------------------------|
 | Go unit tests       | `test-results/unit-tests.xml` (JUnit XML) | `gotestsum --junitfile ...`          |
 | Go coverage         | `coverage.out`                            | `go test -coverprofile=coverage.out` |
-| Trivy security scan | `testdata/sarif/trivy.sarif`                             | `trivy image --format sarif ...`     |
+| Trivy security scan | `testdata/sarif/trivy.sarif`              | `trivy image --format sarif ...`     |
 
 ## Installation
 
@@ -151,19 +151,19 @@ pipelines:
           - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           - trivy fs --format sarif --output trivy.sarif .
 
-          - pipe: docker://alapierre/bb-insights:latest
+          - pipe: docker://lapierre/bb-insights:latest
             variables:
               BB_INSIGHTS_REPORT_TYPE: tests
               BB_INSIGHTS_JUNIT: test-results/unit-tests.xml
               BB_INSIGHTS_TOKEN: $BB_INSIGHTS_TOKEN
 
-          - pipe: docker://alapierre/bb-insights:latest
+          - pipe: docker://lapierre/bb-insights:latest
             variables:
               BB_INSIGHTS_REPORT_TYPE: coverage
               BB_INSIGHTS_INPUT: coverage.out
               BB_INSIGHTS_TOKEN: $BB_INSIGHTS_TOKEN
 
-          - pipe: docker://alapierre/bb-insights:latest
+          - pipe: docker://lapierre/bb-insights:latest
             variables:
               BB_INSIGHTS_REPORT_TYPE: trivy
               BB_INSIGHTS_INPUT: trivy.sarif

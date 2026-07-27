@@ -102,6 +102,40 @@ Both commands mark the report as `FAILED` only if a finding at or above
 are still published as metrics and annotations, they just don't fail the
 report on their own.
 
+### Quality gate (`--exit-code`)
+
+By default `bb-insights` always exits with code `0` after successfully
+publishing, regardless of what the report contains. Use `--exit-code` (env
+`BB_INSIGHTS_EXIT_CODE`) together with `--fail-severity` to turn the publish
+step into a quality gate that fails the pipeline when findings are too severe:
+
+```bash
+bb-insights publish trivy \
+  --input trivy.sarif \
+  --fail-severity high \
+  --exit-code 1
+```
+
+When `--exit-code` is non-zero and at least one finding at or above the
+`--fail-severity` threshold is found, bb-insights:
+
+1. publishes the report to Bitbucket (with result `FAILED`) as usual, and
+2. prints a message to stderr explaining the gate failure, then exits with
+   the specified code.
+
+This makes it straightforward to fail a Bitbucket Pipeline step — or any
+other CI system — without losing the report in Bitbucket Code Insights.
+
+```
+quality gate failed: 3 finding(s) at or above HIGH severity found
+```
+
+Using a code other than `1` (e.g. `2`) lets you distinguish quality gate
+failures from real tool errors (which always exit `1`) in calling scripts.
+
+The default `0` preserves backwards compatibility: existing pipelines that
+don't set `--exit-code` keep working unchanged.
+
 ### Authentication
 
 Exactly one of the following must be configured:
@@ -116,19 +150,20 @@ Exactly one of the following must be configured:
 
 ### Other flags
 
-| Flag          | Env                     | Description                                                       |
-|---------------|-------------------------|-------------------------------------------------------------------|
-| `--base-url`  | `BB_INSIGHTS_BASE_URL`  | Bitbucket API base URL (default `https://api.bitbucket.org/2.0`). |
-| `--timeout`   | `BB_INSIGHTS_TIMEOUT`   | HTTP request timeout (default `30s`).                             |
-| `--link`      | `BB_INSIGHTS_LINK`      | URL linking back to the CI build, shown on the report.            |
-| `--report-id` | `BB_INSIGHTS_REPORT_ID` | Override the default deterministic report ID.                     |
-| `--dry-run`   | `BB_INSIGHTS_DRY_RUN`   | Print the JSON payload instead of calling the Bitbucket API.      |
+| Flag             | Env                        | Description                                                                                                              |
+|------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `--base-url`     | `BB_INSIGHTS_BASE_URL`     | Bitbucket API base URL (default `https://api.bitbucket.org/2.0`).                                                       |
+| `--timeout`      | `BB_INSIGHTS_TIMEOUT`      | HTTP request timeout (default `30s`).                                                                                    |
+| `--link`         | `BB_INSIGHTS_LINK`         | URL linking back to the CI build, shown on the report.                                                                   |
+| `--report-id`    | `BB_INSIGHTS_REPORT_ID`    | Override the default deterministic report ID.                                                                            |
+| `--dry-run`      | `BB_INSIGHTS_DRY_RUN`      | Print the JSON payload instead of calling the Bitbucket API.                                                             |
+| `--exit-code`    | `BB_INSIGHTS_EXIT_CODE`    | (`trivy`/`sarif` only) Exit with this code when findings exceed `--fail-severity`. `0` (default) always exits cleanly.  |
 
 Each subcommand's report path flag also has an env fallback: `--junit` reads
 `BB_INSIGHTS_JUNIT`, and `--input` (on `coverage`, `trivy`, `sarif` and
 `jacoco`) reads `BB_INSIGHTS_INPUT`. `sarif`'s `--title` reads
-`BB_INSIGHTS_TITLE`; both `trivy` and `sarif`'s `--fail-severity` read
-`BB_INSIGHTS_FAIL_SEVERITY`.
+`BB_INSIGHTS_TITLE`; both `trivy` and `sarif`'s `--fail-severity` reads
+`BB_INSIGHTS_FAIL_SEVERITY` and `--exit-code` reads `BB_INSIGHTS_EXIT_CODE`.
 
 Run `bb-insights publish <command> --help` for the full list.
 
@@ -156,7 +191,7 @@ pipelines:
           - chmod +x /usr/local/bin/bb-insights
           - bb-insights publish tests --junit test-results/unit-tests.xml
           - bb-insights publish coverage --input coverage.out
-          - bb-insights publish trivy --input trivy.sarif
+          - bb-insights publish trivy --input trivy.sarif --exit-code 1
 ```
 
 Set `BB_INSIGHTS_TOKEN` as a secured repository variable pointing at a
@@ -215,6 +250,7 @@ pipelines:
             variables:
               BB_INSIGHTS_REPORT_TYPE: trivy
               BB_INSIGHTS_INPUT: trivy.sarif
+              BB_INSIGHTS_EXIT_CODE: 1
               BB_INSIGHTS_TOKEN: $BB_INSIGHTS_TOKEN
 
           - pipe: docker://lapierre/bb-insights:latest

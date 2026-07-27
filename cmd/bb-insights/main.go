@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -52,5 +53,12 @@ func main() {
 	ctx, err := parser.Parse(args)
 	parser.FatalIfErrorf(err)
 
-	ctx.FatalIfErrorf(ctx.Run())
+	if err := ctx.Run(); err != nil {
+		var exitErr *cli.ExitCodeError
+		if errors.As(err, &exitErr) {
+			fmt.Fprintln(os.Stderr, exitErr.Error())
+			os.Exit(exitErr.Code)
+		}
+		ctx.FatalIfErrorf(err)
+	}
 }

@@ -25,6 +25,7 @@ type SarifCmd struct {
 	Input        string `required:"" type:"existingfile" name:"input" env:"BB_INSIGHTS_INPUT" help:"Path to the SARIF report."`
 	Title        string `default:"SARIF Report" env:"BB_INSIGHTS_TITLE" help:"Report title shown in Bitbucket, e.g. the name of the tool that produced the SARIF report."`
 	FailSeverity string `default:"high" enum:"critical,high,medium,low" name:"fail-severity" env:"BB_INSIGHTS_FAIL_SEVERITY" help:"Minimum finding severity that marks the report as FAILED (critical, high, medium, low)."`
+	ExitCode     int    `default:"0" name:"exit-code" env:"BB_INSIGHTS_EXIT_CODE" help:"Exit with this code when findings exceed the fail-severity threshold (quality gate). Zero disables this behaviour and always exits successfully after publishing."`
 }
 
 func (c *SarifCmd) Run() error {
@@ -34,17 +35,22 @@ func (c *SarifCmd) Run() error {
 	}
 	defer func() { _ = f.Close() }()
 
+	threshold := model.Severity(strings.ToUpper(c.FailSeverity))
 	report, err := sarif.Parse(f, sarif.Options{
 		ReportID:       sarif.DefaultSarifReportID,
 		Title:          c.Title,
 		IssueNoun:      "issues",
 		ReportType:     model.ReportTypeBug,
 		AnnotationType: model.AnnotationCodeSmell,
-		FailThreshold:  model.Severity(strings.ToUpper(c.FailSeverity)),
+		FailThreshold:  threshold,
 	})
 	if err != nil {
 		return err
 	}
 
-	return c.publish(report)
+	if err := c.publish(report); err != nil {
+		return err
+	}
+
+	return qualityGateError(report, c.ExitCode, threshold)
 }

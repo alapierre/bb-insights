@@ -173,7 +173,11 @@ func buildAnnotation(f finding, severity model.Severity, seen map[string]int) mo
 
 	var loc *model.Location
 	if f.File != "" {
-		loc = &model.Location{Path: f.File}
+		// Aikido reports container filesystem paths (e.g. "/lib/apk/db/installed"),
+		// which never match a path in the repository anyway; Bitbucket's Code
+		// Insights API additionally rejects an absolute annotation path outright
+		// with "Path is absolute" (400), so the leading slash must go.
+		loc = &model.Location{Path: strings.TrimPrefix(f.File, "/")}
 	}
 
 	link := ""

@@ -108,8 +108,8 @@ func TestParseBuildsAnnotationDetails(t *testing.T) {
 	if a.Summary != "CVE-2025-15467: openssl" {
 		t.Errorf("Summary = %q, want %q", a.Summary, "CVE-2025-15467: openssl")
 	}
-	if a.Location == nil || a.Location.Path != "/lib/apk/db/installed" {
-		t.Errorf("Location = %+v, want a location with the finding's file", a.Location)
+	if a.Location == nil || a.Location.Path != "lib/apk/db/installed" {
+		t.Errorf("Location = %+v, want the finding's file with its leading slash stripped (Bitbucket rejects an absolute annotation path)", a.Location)
 	}
 	if !strings.Contains(a.Details, "Installed version: 3.5.4-r0") {
 		t.Errorf("Details = %q, want it to mention the installed version", a.Details)

@@ -16,4 +16,5 @@ type PublishCmd struct {
 	Trivy    TrivyCmd    `cmd:"" help:"Publish a Trivy security report (SARIF)."`
 	Sarif    SarifCmd    `cmd:"" help:"Publish a generic SARIF report (e.g. golangci-lint, Semgrep, CodeQL)."`
 	JaCoCo   JaCoCoCmd   `cmd:"" name:"jacoco" help:"Publish a JaCoCo Java coverage report (XML)."`
+	Aikido   AikidoCmd   `cmd:"" help:"Publish an Aikido local image scan report (JSON)."`
 }

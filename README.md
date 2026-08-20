@@ -18,13 +18,14 @@ reports.
 
 ## Supported reports
 
-| Report                | Source                                    | Produced by                          |
-|-----------------------|--------------------------------------------|--------------------------------------|
-| Go unit tests         | `test-results/unit-tests.xml` (JUnit XML) | `gotestsum --junitfile ...`          |
-| Go coverage           | `coverage.out`                            | `go test -coverprofile=coverage.out` |
-| JaCoCo coverage       | `jacoco.xml`                              | JaCoCo Maven/Gradle plugin           |
-| Trivy security scan   | `testdata/sarif/trivy.sarif`              | `trivy image --format sarif ...`     |
-| Generic SARIF report  | any SARIF 2.1.0 file                      | e.g. `golangci-lint`, Semgrep, CodeQL |
+| Report               | Source                                           | Produced by                           |
+|----------------------|--------------------------------------------------|---------------------------------------|
+| Go unit tests        | `test-results/unit-tests.xml` (JUnit XML)        | `gotestsum --junitfile ...`           |
+| Go coverage          | `coverage.out`                                   | `go test -coverprofile=coverage.out`  |
+| JaCoCo coverage      | `jacoco.xml`                                     | JaCoCo Maven/Gradle plugin            |
+| Trivy security scan  | `testdata/sarif/trivy.sarif`                     | `trivy image --format sarif ...`      |
+| Generic SARIF report | any SARIF 2.1.0 file                             | e.g. `golangci-lint`, Semgrep, CodeQL |
+| Aikido image scan    | `testdata/aikido/aikido-sample.json`      | Aikido local image scanner (JSON)     |
 
 ## Installation
 
@@ -66,6 +67,10 @@ bb-insights publish sarif \
 bb-insights publish jacoco \
   --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
   --input jacoco.xml
+
+bb-insights publish aikido \
+  --workspace myteam --repo myrepo --commit "$BITBUCKET_COMMIT" \
+  --input aikido-image-scan-results.json
 ```
 
 `--workspace`, `--repo` and `--commit` also fall back to the
@@ -96,11 +101,16 @@ bb-insights publish sarif \
   --report-id bb-insights-semgrep
 ```
 
-Both commands mark the report as `FAILED` only if a finding at or above
-`--fail-severity` (default `high`; also accepts `critical`, `medium` or
-`low`, env `BB_INSIGHTS_FAIL_SEVERITY`) is present. Lower-severity findings
-are still published as metrics and annotations, they just don't fail the
-report on their own.
+`publish aikido` parses the JSON report produced by Aikido's local image
+scanner (a different format from Aikido's own SARIF export, which goes
+through `publish sarif` instead), publishing one annotation per finding with
+a `SECURITY`/`VULNERABILITY` report just like `trivy`.
+
+`trivy`, `sarif` and `aikido` all mark the report as `FAILED` only if a
+finding at or above `--fail-severity` (default `high`; also accepts
+`critical`, `medium` or `low`, env `BB_INSIGHTS_FAIL_SEVERITY`) is present.
+Lower-severity findings are still published as metrics and annotations, they
+just don't fail the report on their own.
 
 ### Quality gate (`--exit-code`)
 
@@ -157,12 +167,12 @@ Exactly one of the following must be configured:
 | `--link`         | `BB_INSIGHTS_LINK`         | URL linking back to the CI build, shown on the report.                                                                   |
 | `--report-id`    | `BB_INSIGHTS_REPORT_ID`    | Override the default deterministic report ID.                                                                            |
 | `--dry-run`      | `BB_INSIGHTS_DRY_RUN`      | Print the JSON payload instead of calling the Bitbucket API.                                                             |
-| `--exit-code`    | `BB_INSIGHTS_EXIT_CODE`    | (`trivy`/`sarif` only) Exit with this code when findings exceed `--fail-severity`. `0` (default) always exits cleanly.  |
+| `--exit-code`    | `BB_INSIGHTS_EXIT_CODE`    | (`trivy`/`sarif`/`aikido` only) Exit with this code when findings exceed `--fail-severity`. `0` (default) always exits cleanly. |
 
 Each subcommand's report path flag also has an env fallback: `--junit` reads
-`BB_INSIGHTS_JUNIT`, and `--input` (on `coverage`, `trivy`, `sarif` and
-`jacoco`) reads `BB_INSIGHTS_INPUT`. `sarif`'s `--title` reads
-`BB_INSIGHTS_TITLE`; both `trivy` and `sarif`'s `--fail-severity` reads
+`BB_INSIGHTS_JUNIT`, and `--input` (on `coverage`, `trivy`, `sarif`, `jacoco`
+and `aikido`) reads `BB_INSIGHTS_INPUT`. `sarif`'s `--title` reads
+`BB_INSIGHTS_TITLE`; `trivy`, `sarif` and `aikido`'s `--fail-severity` reads
 `BB_INSIGHTS_FAIL_SEVERITY` and `--exit-code` reads `BB_INSIGHTS_EXIT_CODE`.
 
 Run `bb-insights publish <command> --help` for the full list.
@@ -270,7 +280,9 @@ only variables declared under a pipe's `variables:` are passed through from
 repository/workspace variables into the container.
 
 `BB_INSIGHTS_REPORT_TYPE: jacoco` works the same way, with
-`BB_INSIGHTS_INPUT` pointing at the `jacoco.xml` report.
+`BB_INSIGHTS_INPUT` pointing at the `jacoco.xml` report. Likewise,
+`BB_INSIGHTS_REPORT_TYPE: aikido` with `BB_INSIGHTS_INPUT` pointing at the
+Aikido image scan JSON report.
 
 ## Verifying a release
 
@@ -300,7 +312,7 @@ gh attestation verify oci://index.docker.io/lapierre/bb-insights:latest --owner 
 The codebase separates three concerns, as required by the project's
 architecture (see `CLAUDE.md`):
 
-- **Parsers** (`internal/parser/{junit,coverage,jacoco,sarif}`) read an external
+- **Parsers** (`internal/parser/{junit,coverage,jacoco,sarif,aikido}`) read an external
   report format and convert it into the internal model. Adding a new report
   format means adding a new parser package; existing parsers are never
   touched.

@@ -1,0 +1,61 @@
+{
+  "timestamp": "2024-01-01T00:00:00Z",
+  "image_name": "example.com/sample-app:latest",
+  "findings": [
+    {
+      "type": "open_source",
+      "severity": "Critical",
+      "aikido_severity": 95,
+      "package_name": "openssl",
+      "installed_version": "3.0.0",
+      "fix_versions": ["3.0.1"],
+      "cve_id": "CVE-2024-0001",
+      "file": "/lib/apk/db/installed",
+      "description": "CVE-2024-0001 in openssl"
+    },
+    {
+      "type": "open_source",
+      "severity": "High",
+      "aikido_severity": 80,
+      "package_name": "netty-handler",
+      "installed_version": "4.2.0",
+      "fix_versions": ["4.2.1"],
+      "cve_id": "CVE-2024-0002",
+      "file": "/app/libs/netty-handler-4.2.0.jar",
+      "description": "CVE-2024-0002 in netty-handler"
+    },
+    {
+      "type": "open_source",
+      "severity": "High",
+      "aikido_severity": 78,
+      "package_name": "jackson-databind",
+      "installed_version": "2.15.0",
+      "fix_versions": ["2.15.1"],
+      "cve_id": "CVE-2024-0003",
+      "file": "/app/libs/jackson-databind-2.15.0.jar",
+      "description": "CVE-2024-0003 in jackson-databind"
+    },
+    {
+      "type": "open_source",
+      "severity": "Medium",
+      "aikido_severity": 55,
+      "package_name": "libpng",
+      "installed_version": "1.6.0",
+      "fix_versions": ["1.6.1"],
+      "cve_id": "CVE-2024-0004",
+      "file": "/lib/apk/db/installed",
+      "description": "CVE-2024-0004 in libpng"
+    },
+    {
+      "type": "open_source",
+      "severity": "Low",
+      "aikido_severity": 20,
+      "package_name": "expat",
+      "installed_version": "2.5.0",
+      "fix_versions": ["2.5.1"],
+      "cve_id": "CVE-2024-0005",
+      "file": "/lib/apk/db/installed",
+      "description": "CVE-2024-0005 in expat"
+    }
+  ]
+}

@@ -53,7 +53,7 @@ jobs:
       # checksums.txt) was built by this exact workflow run, from this exact
       # commit - verifiable with `gh attestation verify`.
       - name: Attest release binary
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-checksums: dist/checksums.txt
 
@@ -66,7 +66,7 @@ jobs:
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
 
       - name: Attest Docker image
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}

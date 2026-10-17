@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/alecthomas/kong v1.16.0
-	github.com/owenrumney/go-sarif/v3 v3.3.0
+	github.com/owenrumney/go-sarif/v3 v3.3.1
 	golang.org/x/tools v0.48.0
 )
 

@@ -1,10 +1,10 @@
 module github.com/alapierre/bb-insights
 
-go 1.26
+go 1.26.10
 
 require (
 	github.com/alecthomas/kong v1.16.0
-	github.com/owenrumney/go-sarif/v3 v3.3.0
+	github.com/owenrumney/go-sarif/v3 v3.3.2
 	golang.org/x/tools v0.48.0
 )
 
